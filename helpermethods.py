@@ -15,49 +15,81 @@ class HelperMethods:
         currentStackId = currentStack["Stacks"][0]["StackId"]
 
         templateBodyString = ""
+        usePreviousTemplate = True
         if templateBody is not None: 
             with open(templateBody, 'r') as readFile:
                 templateBodyString = readFile.read()
+
+            usePreviousTemplate = False
+
         else:
             templateBodyString = self.client.get_template(StackName=currentStackId)
   
-        tempSummary = self.client.get_template_summary(TemplateBody=templateBodyString["TemplateBody"])
-        tempSummaryParams = tempSummary["Parameters"]
-        
+        templateSummary = self.client.get_template_summary(TemplateBody=templateBodyString["TemplateBody"])
+
+        templateParameters = templateSummary["Parameters"]
         currentStackParameters = currentStack["Stacks"][0]["Parameters"]
 
         stackParams = []
-        for i in range(len(tempSummaryParams)):
-            if tempSummaryParams[i]["ParameterKey"] in params.keys():
+        for i in range(len(templateParameters)):
 
-                paramsValue = params[tempSummaryParams[i]["ParameterKey"]]
-                currentStackParameterValue = currentStackParameters[0]
+            if templateParameters[i]["ParameterKey"] in params.keys():
                 
-                print (paramsValue)
-                print (currentStackParameterValue)
-                print (currentStackParameterValue.keys())
-
-                if paramsValue == currentStackParameterValue :
-                    param = {
-                        "ParameterKey": tempSummaryParams[i]["ParameterKey"],
-                        "ParameterValue": None,
-                        "UsePreviousValue": False
-                    }
+                lTemplateParameters = templateParameters[i]
+                matchedParams = params[lTemplateParameters["ParameterKey"]]
 
                 param = {
-                    "ParameterKey": params[tempSummaryParams[i]["ParameterKey"]],
-                    "ParameterValue": params[tempSummaryParams[i]["ParameterKey"]],
-                    "UsePreviousValue": False
+                        "ParameterKey": templateParameters[i]["ParameterKey"],
+                        "ParameterValue": "",
+                        "UsePreviousValue": True
                 }
+
+                for j in range(len(currentStackParameters)):
+
+                    if currentStackParameters[j]["ParameterKey"] == lTemplateParameters["ParameterKey"] and currentStackParameters[j]["ParameterValue"] != matchedParams :
+
+                        param = {
+                            "ParameterKey": templateParameters[i]["ParameterKey"],
+                            "ParameterValue": matchedParams,
+                            "UsePreviousValue": False
+                        }
+                        break
+
                 stackParams.append(param)
-            else:    
+
+            else:
+
                 param = {
-                    "ParameterKey": tempSummaryParams[i]["ParameterKey"],
-                    "ParameterValue": None,
-                    "UsePreviousValue": False
+                    "ParameterKey": templateParameters[i]["ParameterKey"],
+                    "ParameterValue": "",
+                    "UsePreviousValue": True
                 }
+                
                 stackParams.append(param)
-            
+        
+        templateBodyString = templateBodyString["TemplateBody"]
+        response = None
+
+        if usePreviousTemplate :
+
+            response = self.client.update_stack(
+                StackName=stackName,
+                Parameters=stackParams,
+                UsePreviousTemplate=True,
+                Capabilities=["CAPABILITY_IAM"]
+            )
+
+        else :
+
+            response = self.client.update_stack(
+                StackName=stackName,
+                Parameters=stackParams,
+                TemplateBody=templateBodyString,
+                UsePreviousTemplate=Fals,
+                Capabilities=["CAPABILITY_IAM"]
+            )
+        
+        print(response)
 
     def copy(self):
         print("bah")

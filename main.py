@@ -26,6 +26,7 @@ if args.params is not None:
         d = args.params[i].split(":")
         kv = {d[0]:d[1]}
         params.update(kv)
+
 if args.tags is not None:
     for i in range(len(args.tags)):
         d = args.tags[i].split(":")
@@ -34,5 +35,6 @@ if args.tags is not None:
 
 if args.option == "copy":
     helper.copy()
+    
 if args.option == "update":
     helper.update(stackName=args.stackName, templateBody=args.template, params=params)
